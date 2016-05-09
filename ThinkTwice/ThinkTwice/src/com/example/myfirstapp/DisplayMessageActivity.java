@@ -62,8 +62,8 @@ public class DisplayMessageActivity extends ActionBarActivity {
 	    long today_ms = cal.getTimeInMillis();
 	    long today = today_ms / 1000;
 	    //OAUTH KEYS
-	    String consumerKey = "0a5e50b30fa4472ebedcc00ce55514be";
-	    String consumerSecret = "f29c08b786db4c2491d0e0c849a4e00f";
+	    String consumerKey = "";
+	    String consumerSecret = "";
 	        try {
 	        	//OAUTH URL
 	            String urlBase = URL_BASE + "search_expression="+message+"&method=foods.search";//use string builder https://www.youtube.com/watch?v=meXgGO4LTO8
