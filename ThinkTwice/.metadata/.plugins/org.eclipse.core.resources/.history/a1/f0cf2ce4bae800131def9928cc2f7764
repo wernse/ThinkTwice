@@ -1,0 +1,114 @@
+package com.example.myfirstapp;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import android.util.Log;
+
+public class HandlingXML extends DefaultHandler{
+	private static final String TAG = "MyActivity";
+	boolean id =false;
+	boolean name=false;
+	boolean type=false;
+	boolean description = false;
+	boolean first = true;
+	ArrayList<XMLDataCollected> infoList = new ArrayList<XMLDataCollected>();//data is set into this
+    XMLDataCollected info = new XMLDataCollected();//data is set into this
+    
+    public ArrayList<XMLDataCollected> getInformation(){//what info is returned.
+    	Log.v(TAG, "AAAAA"+ infoList.size());
+    	return infoList;
+    }
+    
+	@Override
+	public void startElement(String uri, String localName, String qName,  //localName = name of node
+			Attributes attributes) throws SAXException {//attributes is the attribute value e.g. city data="1"
+		
+		
+		// TODO Auto-generated method stub
+		if(localName.equals("food") && first == false){
+			
+			infoList.add(info);
+			info = new XMLDataCollected();
+			Log.v(TAG, "ADD " );
+		}
+		
+		if(localName.equals("food_id")){
+			id = true;
+			first =false;
+			Log.v(TAG, "food_id " );
+		}			
+		
+		if(localName.equals("food_name")){
+			name = true;
+			Log.v(TAG, "food_name " );
+		}
+		
+		if(localName.equals("food_type")){
+			type = true;
+			Log.v(TAG, "food_type " );
+		}
+		
+		if(localName.equals("food_description")){
+			description = true;
+			Log.v(TAG, "food_description " );
+		}
+		
+
+
+	 
+
+
+			
+	}
+
+	@Override
+	public void characters(char[] ch, int start, int length)
+			throws SAXException {
+		// TODO Auto-generated method stub
+		
+		if (id) {
+			String value = new String(ch, start, length);
+			int idValue = Integer.parseInt(value);
+			info.setId(idValue);
+			Log.v(TAG, "id"+info.getId() );
+			id = false;
+		}
+ 
+		if (name) {
+			String value = new String(ch, start, length);
+			info.setName(value);
+			Log.v(TAG, "name"+info.getName() );
+			name = false;
+		}
+ 
+		if (type) {
+			String value = new String(ch, start, length);
+			info.setType(value);
+			Log.v(TAG, "type"+info.getType() );
+			type = false;
+		}
+ 
+		if (description) {
+			String value = new String(ch, start, length);
+			String[] split= value.split("\\s+");
+			String calories = split[5];
+			String a = calories.substring(0, (calories.length()-4)); 
+			Log.v(TAG, "calories4: "+a );
+			Log.v(TAG, "description4: "+(calories.length()-4) );
+			Log.v(TAG, "description3: "+split[4] );
+			Log.v(TAG, "description5: "+split[5] );
+			info.setDescription(value);
+			Log.v(TAG, "description"+info.getDescription() );
+			description = false;
+		}
+ 
+	}
+
+	
+	
+}

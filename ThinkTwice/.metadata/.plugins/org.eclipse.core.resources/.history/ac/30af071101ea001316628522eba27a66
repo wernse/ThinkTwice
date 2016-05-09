@@ -1,0 +1,105 @@
+package com.example.myfirstapp;
+
+import java.io.Serializable;
+
+import android.util.Log;
+
+public class XMLDataCollected implements Serializable{
+	int id =0;
+    String name=null;
+    String type=null;
+    String description = null;//Per 342g - Calories: 835kcal | Fat: 32.28g | Carbs: 105.43g | Protein: 29.41g</food_description>
+	private static final String TAG = "MyActivity";
+    public void setId(int id){
+    	this.id = id;
+    }
+    public void setName(String name){
+    	this.name = name;
+    }
+    public void setType(String type){
+    	this.type = type;
+    }    
+    public void setDescription(String description){
+    	this.description = description;
+    }
+    
+    
+    public int getId(){
+    	return this.id;
+    }
+    public String getName(){
+    	return this.name;
+    }
+    public String getType(){
+    	return this.type;
+    }    
+    public String getDescription(){
+    	return this.description;
+    }
+    
+    public int calculateCalories(){
+    	//Log.v(TAG, "this.description: "+this.description );
+		String[] split= this.description.split("\\s+");
+		//Log.v(TAG, "SPLIT: "+split.length );
+		String calories = split[split.length-10];
+		//Log.v(TAG, "description3: "+split[split.length-10] );
+		//Log.v(TAG, "description5: "+split[split.length-11] );
+		String a = calories.substring(0, (calories.length()-4)); 
+		int result = Integer.parseInt(a);
+		//Log.v(TAG, "calories4: "+a );
+		//Log.v(TAG, "description4: "+(calories.length()-4) );
+
+		return result;
+    }
+    
+    public String[] getMetric(){
+		String[] split= this.description.split("\\s+");
+		String valueString = split[1];
+		String gramCheck = valueString.substring( (valueString.length()-1), (valueString.length())); 
+		String metric = "";
+		int i = 2;
+		while(i<split.length){
+			if(split[i].equals("-")){
+				break;
+			}
+			metric = metric + " " +split[i];
+		i++;
+		}
+		//Log.v(TAG, "metric " + metric);
+		//if split[2] .equals -
+		if(gramCheck.equals("g") ){
+			valueString = valueString.substring( 0, (valueString.length()-1));
+			metric = "g";
+			//Log.v(TAG, "gram ");
+		}
+		
+		//Log.v(TAG, "int value "+valueString+",  metric "+metric);
+		//Log.v(TAG, "description1: "+split[1] );
+		//Log.v(TAG, "description2: "+split[2] );
+		String[] result = new String[]{valueString, metric};
+		//String a = calories.substring(0, (calories.length()-4)); 
+		//int result = Integer.parseInt(a);
+		//Log.v(TAG, "calories4: "+a );
+		//Log.v(TAG, "description4: "+(calories.length()-4) );
+
+		return result;
+    }
+    
+    public void getProtein(){
+		String[] split= this.description.split("\\s+");
+		String proteinString = split[split.length];
+		String gramCheck = proteinString.substring( 0, (valueString.length()-1));
+		String metric = "";
+		int i = 2;
+		while(i<split.length){
+			if(split[i].equals("-")){
+				break;
+			}
+			metric = metric + " " +split[i];
+		i++;
+		}
+
+    }
+    
+    
+}

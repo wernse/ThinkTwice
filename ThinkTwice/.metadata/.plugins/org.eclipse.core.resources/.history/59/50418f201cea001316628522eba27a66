@@ -1,0 +1,253 @@
+package com.example.myfirstapp;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.StrictMode;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.content.Intent;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ListAdapter;
+import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
+import android.support.v7.app.ActionBar;
+
+public class MainActivity extends ActionBarActivity {
+	public final static String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";//key value pair
+	private static final String TAG = "MyActivity";
+    static final String KEY_NAME = "name";
+    static final String KEY_COST = "type";
+    static final String KEY_DESC = "description";
+	ArrayList<HashMap<String, String>> menuItems = new ArrayList<HashMap<String, String>>();//for storing swipes
+	ArrayList<HashMap<String, String>> compareItems = new ArrayList<HashMap<String, String>>();//for storing swipes
+	ArrayList<XMLDataCollected> infoList = new ArrayList<XMLDataCollected>();//data is set into this
+	ArrayList<XMLDataCollected> compareList = new ArrayList<XMLDataCollected>();//data is set into this
+	private ProgressBar mProgress;
+    private int mProgressStatus = 0;
+    private Handler mHandler = new Handler();
+    
+    
+    
+    @Override//main,0->display,0->page,1->main,1
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Intent i = getIntent();
+        mProgress = (ProgressBar) findViewById(R.id.calorieBar);
+        mProgress.setVisibility(View.INVISIBLE);
+        if(i.getSerializableExtra("list") != null){
+        	int totalCalories = instantiateList();
+        	
+        	ListView mainListView = (ListView) findViewById(R.id.meal);
+        	ListAdapter listAdapter = new SimpleAdapter(this, menuItems, R.layout.da_item,
+        			new String[] { KEY_NAME, KEY_DESC, KEY_COST }, new int[] {
+				 R.id.name, R.id.description, R.id.type });
+        	mainListView.setAdapter( listAdapter ); 
+        	
+        	//removal when an object is clicked.
+        	mainListView.setOnItemClickListener(new OnItemClickListener() {
+		          public void onItemClick(AdapterView<?> parent, View view,
+		              int position, long id) {  
+		        	  Intent i = getIntent();
+		        	  Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+		        	  infoList.remove(position);
+		        	  intent.putExtra("list", infoList);//passing saved list
+		        	  if(i.getSerializableExtra("compare") != null)
+		        	  intent.putExtra("compare", compareList);  
+		        	  startActivity(intent);//naviages to the new activity with an intent   
+		          }
+		        });
+        	//calories setter
+        	TextView textView = (TextView) findViewById(R.id.calories);//view
+        	String totalCaloriesString = "Total Calories: "+totalCalories+" out of 2000cals";
+        	//Log.v(TAG, "totalCaloriesString"+ totalCaloriesString);
+        	textView.setText(totalCaloriesString);//view->
+        	Log.v(TAG, "PRECOMPARE");
+        	if(i.getSerializableExtra("compare") != null){
+        		Log.v(TAG, "COMPARE");
+        		compareList = (ArrayList<XMLDataCollected>) i.getSerializableExtra("compare");//passing saved list
+        		double calories = 0.0;
+        		String name = null;
+        		String metric[] = null;
+        		for (XMLDataCollected item: compareList) {
+            		HashMap<String, String> map = new HashMap<String, String>();
+            		map.put(KEY_NAME,item.getName());
+            		map.put(KEY_DESC,item.getDescription());
+            		map.put(KEY_COST,item.getType());
+            		compareItems.add(map);
+            		calories = item.calculateCalories();
+            		name=item.getName();
+            		metric = item.getMetric();
+            	}
+        		ListView compareListView = (ListView) findViewById(R.id.compareItem);
+            	ListAdapter compareListAdapter = new SimpleAdapter(this, compareItems, R.layout.da_item,
+            			new String[] { KEY_NAME, KEY_DESC, KEY_COST }, new int[] {
+    				 R.id.name, R.id.description, R.id.type });
+            	compareListView.setAdapter(compareListAdapter); 
+            	double metricValue=0.0;
+            	if(metric[0].equals("1/2")){
+            		metricValue = 0.5;
+            	}else{
+            		metricValue = Integer.parseInt(metric[0]);
+            	}
+            	double equiv = (totalCalories/calories)*metricValue;
+            	DecimalFormat df=new DecimalFormat("0.00");          	
+            	String eqivCaloriesString = df.format(equiv)+metric[1]+", "+name;         	
+            	TextView compareTextView = (TextView) findViewById(R.id.comparator);//view
+            	//Log.v(TAG, "equiv"+ equiv);
+            	compareTextView.setText(eqivCaloriesString);//view->
+        	}
+        	
+
+        	mProgress = (ProgressBar) findViewById(R.id.calorieBar);
+        	mProgress.setVisibility(View.VISIBLE);
+        	double calorieBar = totalCalories/2000.0;
+        	final int caloriePercent = (int) (calorieBar*100);
+            // Start lengthy operation in a background thread
+            new Thread(new Runnable() {
+                public void run() {
+                    while (mProgressStatus < caloriePercent) {
+                    	mProgressStatus += 1;
+                        // Update the progress bar
+                        mHandler.post(new Runnable() {
+                            public void run() {
+                                mProgress.setProgress(mProgressStatus);
+                            }
+                        });
+                    }
+                }
+            }).start();
+        	
+        	
+        	
+        	//ADD A RUNNING TOTAL BY CALCULATING CALORIES OF LISTITEMS, DONE
+        	//ADD ACTION LISTENER TO REMOVE CERTAIN ITEM, DO BY GETTING INDEX OF ITEM THEN REMOVING FROM LIST OR MENU BUTTON TO REMOVE ALL ITEMS , DONE
+        	//ADD LEFT TO RIGHT COMPARE DONE
+        	//pass compare as intent done
+        	//replace intent if user swips compare again done
+        	//get 2nd value in description then times by equiv, add grams if contains grams/ thrid split is "-" else add metric after
+        	
+        }
+        
+//solve by passing intent throughout
+//fragments too hard to use
+//fragment swipe not needed.
+        
+    }
+    
+    public int instantiateList(){
+    	Intent i = getIntent();
+    	infoList = (ArrayList<XMLDataCollected>) i.getSerializableExtra("list");//passing saved list
+    	//i.putExtra("list", infoList);//passing saved list
+    	Log.v(TAG, "MAIN ACTIVITY SIZE"+ infoList.size());
+    	int totalCalories = 0;
+    	//need to make hashmap out of infolist
+    	for (XMLDataCollected item: infoList) {
+    		HashMap<String, String> map = new HashMap<String, String>();
+    		map.put(KEY_NAME,item.getName());
+    		map.put(KEY_DESC,item.getDescription());
+    		map.put(KEY_COST,item.getType());
+    		menuItems.add(map);
+    		totalCalories += item.calculateCalories();
+    		}
+    	return totalCalories;
+    	}
+    
+//http://stackoverflow.com/questions/3505930/make-an-http-request-with-android
+
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+/*
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle presses on the action bar items
+        switch (item.getItemId()) {
+            case R.id.action_search:
+                openSearch();
+                return true;
+            case R.id.action_settings:
+                openSettings();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+    */  
+
+	/**
+     * A placeholder fragment containing a simple view.
+     */
+
+    private void openSearch() {
+    	Toast.makeText(this, "Search button pressed", Toast.LENGTH_SHORT).show();
+		
+	}
+    private void openSettings() {
+    	Toast.makeText(this, "openSettings pressed", Toast.LENGTH_SHORT).show();
+		
+	}
+
+
+
+	/** Called when the user clicks the Send button */       //THIS IS THE METHOD CALLED FROM ONCLICK FROM XML EDIT BUTTON LAYOUT
+    public void sendMessage(View view) {
+        // Do something in response to button
+    	Intent intent = new Intent(this, DisplayMessageActivity.class);//needed so both create and passmessage can put in intent
+    	Intent i = getIntent();
+    	//intent method, can use intent get in main method to paint, this is used to send
+    	 if(i.getSerializableExtra("list") != null){
+         	ArrayList<XMLDataCollected> infoList = (ArrayList<XMLDataCollected>) i.getSerializableExtra("list");//passing saved list
+        	intent.putExtra("list", infoList);
+        	//Log.v(TAG, "RPE "+ menuItems.size());
+        }
+    	 if(i.getSerializableExtra("compare") != null){
+          	ArrayList<XMLDataCollected> compareList = (ArrayList<XMLDataCollected>) i.getSerializableExtra("compare");//passing saved list
+         	intent.putExtra("compare", compareList);
+         	//Log.v(TAG, "RPE "+ menuItems.size());
+         }
+    	
+    	//passes object
+    	
+    	EditText editText = (EditText) findViewById(R.id.edit_message);//view
+    	String message = editText.getText().toString();//view->
+    	intent.putExtra(EXTRA_MESSAGE, message);//key,value pair(MESSAGE,string)
+    	startActivity(intent);
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu items for use in the action bar
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_activity_actions, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+    
+
+}
